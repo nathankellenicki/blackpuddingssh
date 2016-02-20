@@ -10,7 +10,7 @@ httpServer.on('upgrade', function(request, socket, body) {
 		var server = null;
 
 		client.on('message', function(event) {
-			console.log("Received "+event.data);
+			console.log("Received "+ new Buffer(event.data, "base64").toString());
 
 			if (server == null) {
 				const connectionString = new Buffer(event.data, "base64").toString().split(' ');
@@ -18,11 +18,12 @@ httpServer.on('upgrade', function(request, socket, body) {
 				if (connectionString[0].startsWith("CONNECT")) {
 					server = net.connect(connectionString[2], connectionString[1], function() {
 						console.log('Connected to server!');
-						client.send("CONNECTED");
+						client.send(new Buffer("CONNECTED").toString("base64"));
 					});
 
-					server.on('data', function(event) {
-						client.send(new Buffer(event.data).toString("base64"));
+					server.on('data', function(data) {
+                        console.log(data);
+						client.send(data.toString("base64"));
 					});
 
 					server.on('end', function() {
@@ -34,7 +35,7 @@ httpServer.on('upgrade', function(request, socket, body) {
 					client.close();
 				}
 			} else {
-				server.write(event.data);
+				server.write(new Buffer(event.data, "base64"));
 			}
 		});
 
