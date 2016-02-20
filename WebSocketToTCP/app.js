@@ -1,49 +1,50 @@
-const ws = require("nodejs-websocket")
-const net = require('net');
- 
-var server = ws.createServer(function (conn) {
-	console.log("New connection")
-	var client = null;
+const WebSocket = require('faye-websocket'),
+	  http      = require('http'),
+	  net 		= require('net');
 
-	conn.on("text", function (str) {
-		console.log("Received "+str)
+var httpServer = http.createServer();
 
-		if (client == null) {
-			const connectionString = str.split(' ');
+httpServer.on('upgrade', function(request, socket, body) {
+	if (WebSocket.isWebSocket(request)) {
+		var client = new WebSocket(request, socket, body);
+		var server = null;
 
-			if (connectionString[0].startsWith("CONNECT")) {
-				client = net.connect(connectionString[2], connectionString[1], function() {
-					console.log('connected to server!');
-					conn.sendText("CONNECTED");
-				});
+		client.on('message', function(event) {
+			console.log("Received "+event.data);
 
-				client.on('data', function(data) {
-					conn.sendText(data);
-				});
+			if (server == null) {
+				const connectionString = new Buffer(event.data, "base64").toString().split(' ');
 
-				client.on('end', function() {
-					console.log('disconnected from server');
-					conn.close();
-				});
+				if (connectionString[0].startsWith("CONNECT")) {
+					server = net.connect(connectionString[2], connectionString[1], function() {
+						console.log('Connected to server!');
+						client.send("CONNECTED");
+					});
+
+					server.on('data', function(event) {
+						client.send(new Buffer(event.data).toString("base64"));
+					});
+
+					server.on('end', function() {
+						console.log('Disconnected from server');
+						client.close();
+					});
+				} else {
+					client.send("Connection string expected");
+					client.close();
+				}
 			} else {
-				conn.sendText("Connection string expected");
-				conn.close();
+				server.write(event.data);
 			}
-		} else {
-			client.write(str);
-		}
-	});
+		});
 
-	conn.on("close", function (code, reason) {
-		console.log("Connection closed");
-		if (client != null)
-			client.end();
-	});
+		client.on('close', function(event) {
+			console.log('close', event.code, event.reason);
+			client = null;
+			if (server != null)
+				server.end();
+		});
+	}
+});
 
-	conn.on("error", function(error) {
-		console.error(error.message);
-		if (client !=null )
-			client.write(error.message);
-	});
-
-}).listen(8001);
+httpServer.listen(8001);
