@@ -1,0 +1,23 @@
+{
+  "name": "blackpuddingssh",
+  "homepage": "https://github.com/nathankunicki/blackpuddingssh",
+  "authors": [
+    "= <=>"
+  ],
+  "description": "",
+  "main": "termjs/index.html",
+  "moduleType": [],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "term.js": "chjj/term.js#^0.0.7",
+    "paramikojs": "mimecuvalo/paramikojs"
+  }
+}
